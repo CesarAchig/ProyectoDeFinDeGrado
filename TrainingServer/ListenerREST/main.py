@@ -179,7 +179,6 @@ async def iniciar_entrenamiento(request: TrainingRequest):
 
     log.info(f"Petición recibida: user={request.user} dataset={request.fileName} target={request.targetColumn} job_id={job_id}")
 
-    # --- Grabar estado inicial en DynamoDB ---
     try:
         tabla = _obtener_cliente_dynamodb()
         _grabar_estado_inicial(tabla, job_id, request, timestamp)
@@ -196,7 +195,6 @@ async def iniciar_entrenamiento(request: TrainingRequest):
             detail=f"Error inesperado al acceder a DynamoDB: {error}"
         )
 
-    # --- Lanzar TrainingService en background ---
     try:
         _lanzar_training_service(job_id, request)
     except FileNotFoundError as error:
@@ -257,7 +255,6 @@ async def predict(request: PredictionRequest):
     log = CloudWatchLogger.get()
     log.info(f"[ListenerREST] Recibida petición de predicción para user={request.user} dataset={request.datasetName} mlflowRunId={request.mlflowRunId}")
 
-    # --- Validar que features_csv no está vacío ---
     if not request.features_csv or not request.features_csv.strip():
         log.error(f"[ListenerREST] features_csv vacío para user={request.user} dataset={request.datasetName}")
         raise HTTPException(
@@ -265,7 +262,6 @@ async def predict(request: PredictionRequest):
             detail="El campo 'features_csv' no puede estar vacío."
         )
 
-    # --- Detectar formato CSV (delimitador y separador decimal) ---
     def _detectar_formato_csv(csv_text):
         primera_linea = csv_text.split('\n')[0]
         puntos_y_coma = primera_linea.count(';')
@@ -277,7 +273,6 @@ async def predict(request: PredictionRequest):
     sep, decimal = _detectar_formato_csv(request.features_csv)
     log.info(f"[ListenerREST] Formato CSV detectado: sep='{sep}', decimal='{decimal}'")
 
-    # --- Parsear features_csv a DataFrame ---
     try:
         df_features = pd.read_csv(
             io.StringIO(request.features_csv),
@@ -291,13 +286,11 @@ async def predict(request: PredictionRequest):
             detail=f"Error al parsear 'features_csv' como CSV: {error}"
         )
 
-    # --- Configurar MLflow tracking URI ---
     mlflow_server_ip = os.getenv("MLFLOW_SERVER_IP", "localhost")
     mlflow_tracking_uri = f"http://{mlflow_server_ip}:8080"
     mlflow.set_tracking_uri(mlflow_tracking_uri)
     log.info(f"[ListenerREST] MLflow tracking URI configurado: {mlflow_tracking_uri}")
 
-    # --- Cargar modelo desde MLflow ---
     try:
         modelo = mlflow.sklearn.load_model(f"runs:/{request.mlflowRunId}/model")
     except MlflowException as error:
@@ -313,7 +306,6 @@ async def predict(request: PredictionRequest):
             detail=f"Error inesperado al cargar el modelo: {error}"
         )
 
-    # --- Detectar y eliminar columna target si está presente en el CSV ---
     try:
         cliente = mlflow.tracking.MlflowClient()
         run = cliente.get_run(request.mlflowRunId)
@@ -324,7 +316,6 @@ async def predict(request: PredictionRequest):
     except Exception as error:
         log.warning(f"[ListenerREST] No se pudo verificar la columna target del run {request.mlflowRunId}: {error}")
 
-    # --- Ejecutar predicciones ---
     try:
         predicciones = modelo.predict(df_features)
     except Exception as error:

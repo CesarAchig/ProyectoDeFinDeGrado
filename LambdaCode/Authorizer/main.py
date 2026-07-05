@@ -1,16 +1,25 @@
+###########################
+#     Import Libraries    #
+###########################
 import json
 import os
 import re
 import boto3
 from boto3.dynamodb.conditions import Key
 
+
+###########################
+#   Configuración Global  #
+###########################
 TABLE_NAME = os.environ.get('USERS_TABLE_NAME', 'users-auth-table')
 _dynamodb = boto3.resource('dynamodb')
 _table = _dynamodb.Table(TABLE_NAME)
-
 MAX_TOKEN_LENGTH = 256
 
 
+###########################
+#        Functions        #
+###########################
 def lambda_handler(event, context):
     """
     API Gateway Lambda Authorizer (tipo TOKEN).

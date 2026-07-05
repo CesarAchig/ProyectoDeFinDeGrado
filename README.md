@@ -59,29 +59,25 @@ Para asegurar la fiabilidad a largo plazo, la plataforma integra un sistema de i
 ## Estructura del proyecto
 
 ```
-ProyectoPFG/
+ProyectoDeFinDeGrado/
 ├── API-CLI/              # CLI en Go (cobra)
 │   └── go.mod            # Módulo Go 1.25.3 + cobra v1.10.1
+├── Infrastructure/       # Terraform (AWS)
+│   ├── extrafiles/       # Scripts de bootstrap
+│   │   ├── MLFlowServer.sh
+│   │   └── TrainingServer.sh
+│   └── *.tf              # Recursos AWS
 ├── LambdaCode/           # Funciones AWS Lambda (Python 3.12)
 │   ├── Authentication/
+│   ├── Authorizer/
 │   ├── DeleteData/
 │   ├── GetPrediction/
 │   ├── GetTrainingStatus/
 │   └── TrainingRequest/
-├── TrainingServer/       # Servicios en EC2
-│   ├── TrainingService/  # Lógica de AutoML + MLflow
-│   └── ListenerREST/     # FastAPI/uvicorn (puerto 8080)
-├── Infrastructure/       # Terraform (AWS)
-│   ├── extrafiles/       # Scripts de bootstrap
-│   │   ├── TrainingServer.sh
-│   │   └── MLFlowServer.sh
-│   └── *.tf              # Recursos AWS
-├── TFG/                  # Memoria LaTeX
-│   ├── capitulos/
-│   ├── imagenes/
-│   ├── main.tex
-│   └── export.bib
-└── Workflow/             # Documentación y notas de investigación
+└── TrainingServer/       # Servicios en EC2
+    ├── common/           # Utilidades compartidas (logger, etc.)
+    ├── ListenerREST/     # FastAPI/uvicorn (puerto 8080)
+    └── TrainingService/  # Lógica de ML + MLflow
 ```
 
 ## Requisitos previos

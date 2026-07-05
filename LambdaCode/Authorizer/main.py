@@ -8,9 +8,9 @@ import boto3
 from boto3.dynamodb.conditions import Key
 
 
-###########################
-#   Configuración Global  #
-###########################
+##########################
+#  Global Configuration  #
+##########################
 TABLE_NAME = os.environ.get('USERS_TABLE_NAME', 'users-auth-table')
 _dynamodb = boto3.resource('dynamodb')
 _table = _dynamodb.Table(TABLE_NAME)

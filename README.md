@@ -1,5 +1,7 @@
 # Diseño e Implementación de una Arquitectura en la Nube para la Gestión del Ciclo de Vida de Modelos Basados en Machine Learning
 
+> **Nota**: Este repositorio constituye el Anexo Técnico y el código fuente del Trabajo de Fin de Grado defendido en la ETSISI - UPM.
+
 <p align="center">
   <img src=".images/etsist.png" alt="ETSISI UPM">
 </p>
@@ -34,25 +36,25 @@ Para asegurar la fiabilidad a largo plazo, la plataforma integra un sistema de i
 - **AWS Lambda**: 4 funciones Python 3.12 que orquestan autenticación, inicio de entrenamiento, consulta de estado y eliminación de datos.
 - **Training EC2**: Instancia `t4g.small` que ejecuta la lógica de AutoML y un servicio FastAPI/uvicorn (puerto 8080) para recibir peticiones desde Lambda.
 - **MLflow EC2**: Instancia `t4g.small` dedicada al tracking server de MLflow (puerto 8080), con artefactos almacenados en S3.
-- **S3**: 3 buckets para datasets (`datasets-pfg-s3`), transferencia de código (`filestransfer-pfg-s3`) y artefactos de MLflow (`mlflowartifacts-pfg-s3`).
+- **S3**: 3 buckets para datasets (`mock-datasets-pfg-s3`), transferencia de código (`mock-filestransfer-pfg-s3`) y artefactos de MLflow (`mock-mlflowartifacts-pfg-s3`).
 - **DynamoDB**: Tabla `users-auth-table` (modo `PAY_PER_REQUEST`) para autenticación y metadatos.
 - **Terraform**: Infraestructura como código que despliega todos los recursos AWS.
 
 ## Stack tecnológico
 
-| Capa | Tecnología | Versión | Propósito |
-|------|-----------|---------|-----------|
-| CLI | Go | 1.25.3 | Cliente de línea de comandos |
-| API | AWS API Gateway | — | Punto de entrada REST |
-| Serverless | AWS Lambda | Python 3.12 | Orquestación de operaciones |
-| Compute | AWS EC2 (t4g.small) | Ubuntu 24.04 | Training Server + MLflow Server |
-| Storage | AWS S3 | — | Datasets, artefactos, transferencia de código |
-| Database | AWS DynamoDB | — | Metadatos de usuarios y estado |
-| Training | Python 3.12 + scikit-learn | — | Motor de AutoML |
-| Tracking | MLflow | 2.x | Versionado y registro de modelos |
-| REST API | FastAPI + Uvicorn | — | Listener en Training Server (puerto 8080) |
-| IaC | Terraform | 1.14.9 | Despliegue de infraestructura AWS |
-| IA | OpenCode (API OpenAI) | — | Motor LLM para análisis de datasets y selección de algoritmos |
+| Capa | Tecnología | Propósito |
+|------|-----------|-----------|
+| CLI | Go | Cliente de línea de comandos |
+| API | AWS API Gateway | Punto de entrada REST |
+| Serverless | AWS Lambda | Orquestación de operaciones |
+| Compute | AWS EC2 (t4g.small) | Training Server + MLflow Server |
+| Storage | AWS S3 | Datasets, artefactos, transferencia de código |
+| Database | AWS DynamoDB | Metadatos de usuarios y estado |
+| Training | Python 3.12 + scikit-learn | Motor de AutoML |
+| Tracking | MLflow | Versionado y registro de modelos |
+| REST API | FastAPI + Uvicorn | Listener en Training Server (puerto 8080) |
+| IaC | Terraform | Despliegue de infraestructura AWS |
+| IA | OpenCode (API OpenAI) | Motor LLM para análisis de datasets y selección de algoritmos |
 
 ## Estructura del proyecto
 
@@ -108,13 +110,18 @@ cd ../API-CLI
 go build -o api-cli .
 
 # 4. Usar la plataforma
-./api-cli --source <API_GATEWAY_URL> login
-./api-cli --source <API_GATEWAY_URL> upload --dataset <path>
-./api-cli --source <API_GATEWAY_URL> start-training --dataset-name <name>
-./api-cli --source <API_GATEWAY_URL> delete --dataset-name <name>
+# Primero, autentícate (esto guardará la sesión y la URL localmente)
+./api-cli login --source <API_GATEWAY_URL> --username <tu_usuario>
+
+# Luego, puedes operar sin volver a especificar la URL
+./api-cli upload --dataset <path_al_csv>
+./api-cli start-training --dataset-name <nombre_archivo_csv>
+./api-cli get-status --dataset-name <nombre_archivo_csv>
+./api-cli predict --dataset-name <nombre_archivo_csv> --json-data <datos>
+./api-cli delete --dataset-name <nombre_archivo_csv>
 ```
 
-> **Crítico**: Todos los comandos del CLI requieren la flag `--source` con la URL de la API Gateway.
+> **Nota**: El comando `login` requiere las flags `--source` y `--username`. La URL y el token se guardan localmente de forma segura, por lo que no es necesario repetir la flag `--source` en los comandos posteriores.
 
 ## Endpoints de la API
 
@@ -128,77 +135,34 @@ go build -o api-cli .
 
 ## Funcionamiento del pipeline
 
-1. **Ingesta**: El usuario sube un dataset mediante el CLI → almacenamiento en S3 (`datasets-pfg-s3`).
+1. **Ingesta**: El usuario sube un dataset mediante el CLI → almacenamiento en S3 (`mock-datasets-pfg-s3`).
 2. **Trigger**: El usuario solicita inicio de entrenamiento mediante CLI → API Gateway → Lambda `TrainingRequest` → petición HTTP al Training EC2 (ListenerREST en puerto 8080).
-3. **AutoML**: El Training Server ejecuta:
-   - Preprocesamiento inteligente de datos.
-   - Iteración sobre múltiples algoritmos de ML (scikit-learn).
-   - Ajuste dinámico de hiperparámetros.
-   - Selección del modelo con mejor rendimiento.
-4. **Registro**: El mejor modelo se versiona automáticamente en MLflow, con metadatos, parámetros y artefactos almacenados en S3/DynamoDB.
-5. **Monitorización**: El sistema de inferencia evalúa continuamente el rendimiento y detecta *data drift*.
-6. **Reentrenamiento**: Si la precisión cae bajo el umbral configurado, se dispara automáticamente el *pipeline* de **Continuous Training**, fusionando datos históricos con nuevas observaciones.
+3. **Entrenamiento Inteligente**: El Training Server ejecuta:
+   - Preprocesamiento y análisis exploratorio (EDA) asistido por LLM.
+   - Recomendación automatizada del mejor algoritmo de ML (scikit-learn) y sus hiperparámetros óptimos generados por IA en base a las características del dataset.
+   - Entrenamiento y evaluación del modelo recomendado.
+4. **Registro**: El modelo resultante se versiona automáticamente en MLflow, garantizando la trazabilidad completa de metadatos, métricas, parámetros y código.
 
 ## Características clave
 
-- **Zero-touch pipeline**: Automatización completa desde la ingesta de datos hasta el despliegue y mantenimiento del modelo.
-- **AutoML integrado**: Selección automática del mejor algoritmo y configuración de hiperparámetros sin intervención manual.
+- **Zero-touch pipeline**: Automatización completa desde la ingesta de datos hasta el entrenamiento y registro del modelo.
+- **Selección de modelo por IA**: Recomendación automática del mejor algoritmo y configuración de hiperparámetros asistida por LLM sin intervención manual.
 - **Trazabilidad total**: MLflow registra todos los experimentos, modelos, métricas y artefactos.
 - **Serverless**: API Gateway + Lambda para escalabilidad elástica y bajo coste operativo.
-- **Continuous Training**: Reentrenamiento automático ante degradación de datos (*data drift*).
 - **Open Source**: Stack tecnológico 100% libre (Go BSD, Python PSF, Terraform MPL-2.0, MLflow Apache-2.0).
 
-## Presupuesto y costes
-
-| Concepto | Importe |
-|----------|---------|
-| Desarrollo (320h x 15 EUR/h) | 4.800,00 EUR |
-| AWS mensual (2x t4g.small 24/7) | ~18,00 - 21,00 EUR/mes |
-| Software y herramientas | 0,00 EUR (open source) |
-| **Total proyecto (desarrollo + 1 año operación)** | **~5.016,00 - 5.052,00 EUR** |
-
-> El coste puede reducirse drásticamente apagando instancias EC2 fuera de horas de uso o aprovechando la capa gratuita (Free Tier) de AWS durante el primer año.
 
 ## Problemas conocidos / TODO
 
-- [ ] **Sesgo algorítmico**: El proceso AutoML no incluye actualmente métricas de *fairness*. Pendiente integrar librerías como `fairlearn` o `aif360`.
+- [ ] **Sesgo algorítmico**: El proceso no incluye actualmente métricas de *fairness*. Pendiente integrar librerías como `fairlearn` o `aif360`.
 - [ ] **Privacidad**: No se ha implementado cifrado explícito con AWS KMS ni anonimización de datos sensibles.
 - [ ] **Conectividad**: La plataforma requiere acceso a Internet, lo que limita su uso en zonas sin cobertura adecuada.
 - [ ] **Balanceo de carga**: Actualmente una única instancia EC2 atiende las peticiones de entrenamiento. Pendiente evaluar auto-scaling o balanceo con ALB.
 - [ ] **Memoria insuficiente (OOM)**: Debido a las limitaciones de la instancia `t4g.small` de la capa gratuita (1 GB RAM), el servidor MLflow puede ser terminado por el sistema (*OOM-killed*) al cargar modelos grandes o gestionar múltiples artefactos. Se recomienda utilizar una instancia con mayor capacidad de RAM (por ejemplo, `t4g.medium` o superior) para entornos de producción.
+- [ ] **Monitorización y Reentrenamiento**: Implementar detección de *data drift* y pipelines de *Continuous Training* automatizados en el entorno de producción.
 
-## Etapas de un modelo de Machine Learning (Contexto educativo)
-
-A continuación se presentan las etapas genéricas del ciclo de vida de un modelo de ML, que sirven de marco teórico para el proyecto:
-
-1. **Definición del Problema**: Identificación del problema que se va a abordar. Establecimiento de los objetivos comerciales y de rendimiento.
-
-2. **Recopilación de Datos**: Recopilación de datos relevantes para el problema. Limpieza y preprocesamiento de datos.
-
-3. **Exploración y Análisis de Datos**: Exploración y análisis estadístico de los datos. Identificación de patrones y relaciones.
-
-4. **Ingeniería de Características**: Selección y transformación de variables relevantes. Creación de nuevas características que puedan mejorar el rendimiento.
-
-5. **Selección del Modelo**: Elección del algoritmo o modelo de aprendizaje automático. Configuración de hiperparámetros iniciales.
-
-6. **Entrenamiento del Modelo**: División del conjunto de datos en conjuntos de entrenamiento y prueba. Entrenamiento del modelo utilizando datos de entrenamiento.
-
-7. **Validación y Ajuste de Hiperparámetros**: Evaluación del rendimiento del modelo en el conjunto de validación. Ajuste de hiperparámetros para mejorar el rendimiento.
-
-8. **Evaluación del Modelo**: Evaluación final del modelo en el conjunto de prueba. Medición de métricas de rendimiento como precisión, recall, F1-score, etc.
-
-9. **Despliegue del Modelo**: Integración del modelo en el entorno de producción. Monitoreo continuo del rendimiento del modelo.
-
-10. **Mantenimiento y Actualización**: Actualización periódica del modelo para mantener su rendimiento. Manejo de cambios en los datos o en los requisitos comerciales.
 
 ## Licencia
-
-Este proyecto utiliza un stack tecnológico 100% open source:
-
-- **Go**: BSD-3-Clause
-- **Python / scikit-learn / MLflow**: PSF / Apache-2.0
-- **Terraform**: MPL-2.0
-- **FastAPI / Uvicorn**: MIT
 
 El código fuente del proyecto se distribuye bajo licencia abierta para fines académicos y de investigación.
 

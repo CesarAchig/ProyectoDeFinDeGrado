@@ -392,14 +392,14 @@ def _ejecutar_pipeline(args: argparse.Namespace, config: object) -> int:
             problem_type=tipo_problema,
         )
 
-        log.info(f"[TrainingService] ✅ Job {job_id} completado con éxito.")
+        log.info(f"[TrainingService] Job {job_id} completado con éxito.")
         return 0
 
 
     # Manejo Global de errores
     except Exception as error:
         log.error("[TrainingService] " + "=" * 60)
-        log.error(f"[TrainingService] ❌ Error en el pipeline para job_id={job_id}")
+        log.error(f"[TrainingService] Error en el pipeline para job_id={job_id}")
         log.error(f"[TrainingService] Tipo: {type(error).__name__}")
         log.error(f"[TrainingService] Mensaje: {error}")
         log.error(f"[TrainingService] Traceback:\n{traceback.format_exc()}")

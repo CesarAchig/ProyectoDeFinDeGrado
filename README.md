@@ -1,9 +1,9 @@
 # Diseño e Implementación de una Arquitectura en la Nube para la Gestión del Ciclo de Vida de Modelos Basados en Machine Learning
 
-> **Nota**: Este repositorio constituye el Anexo Técnico y el código fuente del Trabajo de Fin de Grado defendido en la ETSISI - UPM.
+> **Nota**: Este repositorio constituye el Anexo Técnico y el código fuente del Trabajo de Fin de Grado defendido en la ETSIST - UPM.
 
 <p align="center">
-  <img src=".images/etsist.png" alt="ETSISI UPM">
+  <img src=".images/etsist.png" alt="ETSIST UPM">
 </p>
 
 <p align="center">
@@ -165,5 +165,5 @@ El código fuente del proyecto se distribuye bajo licencia abierta para fines ac
 ---
 
 <p align="center">
-  <sub>Desarrollado como Trabajo Fin de Grado en la ETSISI - UPM</sub>
+  <sub>Desarrollado como Trabajo Fin de Grado en la ETSIST - UPM</sub>
 </p>

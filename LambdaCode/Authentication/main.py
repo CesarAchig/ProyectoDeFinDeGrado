@@ -1,12 +1,22 @@
+###########################
+#     Import Libraries    #
+###########################
 import json
 import os
 import boto3
 
-# Inicialización fuera del handler para aprovechar warm starts
+
+##########################
+#  Global Configuration  #
+##########################
 dynamodb = boto3.resource('dynamodb')
 _table_name = os.environ.get('USERS_TABLE_NAME', 'users-auth-table')
 table = dynamodb.Table(_table_name)
 
+
+###########################
+#        Functions        #
+###########################
 def lambda_handler(event, context):
     """
     Autentica a un usuario buscándolo en DynamoDB.

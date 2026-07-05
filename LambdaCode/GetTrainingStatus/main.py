@@ -64,7 +64,6 @@ def lambda_handler(event, context):
         items = respuesta.get("Items", [])
         print(f"[GetTrainingStatus] Query completado. Items encontrados: {len(items)}")
 
-        # --- Si no hay resultados, devolver 404 ---
         if not items:
             print(f"[GetTrainingStatus] No se encontraron jobs para user='{user_name}', dataset='{dataset_name}'")
             return {
@@ -77,13 +76,9 @@ def lambda_handler(event, context):
                 })
             }
 
-        # --- Seleccionar el job más reciente (por created_at) ---
-        # Ordenamos descendentemente por created_at y tomamos el primero.
         print(f"[GetTrainingStatus] Ordenando {len(items)} jobs por created_at descendente.")
         job = sorted(items, key=lambda x: x.get("created_at", ""), reverse=True)[0]
         print(f"[GetTrainingStatus] Job seleccionado - job_id: {job.get('job_id')}, status: {job.get('status')}, created_at: {job.get('created_at')}")
-
-        # --- Construir y devolver la respuesta ---
         body = {
             "job_id": job.get("job_id", ""),
             "status": job.get("status", "PENDING"),
@@ -103,7 +98,6 @@ def lambda_handler(event, context):
         }
 
     except Exception as e:
-        # --- Error inesperado (conexión, permisos, etc.) ---
         print(f"[GetTrainingStatus] [ERROR] Error inesperado al consultar DynamoDB: {str(e)}")
         return {
             "statusCode": 500,

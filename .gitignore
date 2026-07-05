@@ -1,0 +1,14 @@
+# Python
+__pycache__
+*.env
+
+
+# Terraform data
+**/*.terraform*
+**/Tfstate/**
+**/terraform.tfstate*
+**/tmp
+*.auto.tfvars
+
+# Golang
+API-CLI/api-cli

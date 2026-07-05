@@ -1,0 +1,13 @@
+package main
+
+//////////////////////////
+//   Import Libraries   //
+//////////////////////////
+import "github.com/CesarAchig/api-cli/cmd"
+
+///////////////////////
+//   Main Function   //
+///////////////////////
+func main() {
+	cmd.Execute()
+}
